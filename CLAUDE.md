@@ -15,6 +15,10 @@ Read these before design or implementation work:
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
 
+Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
+
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (confirmed 2026-10-08)
+
 If documents conflict, follow the order above.
 
 Respect the status labels in those documents ("確定" / "方向" / "第一案" / "候補" / "未確定").
@@ -78,19 +82,32 @@ stop and report the issue before implementation.
 
 Large monitor views and tablet screens are UI, not separate databases.
 
+### V2-wide principles (confirmed)
+
+- Default values are set automatically from masters/rules and saved as snapshots on the record. People edit only exceptions.
+- Link to masters by ID; keep names as snapshots.
+- Do not stop field operations because of system inconsistencies.
+  - Stock shortage, missing Lot, missing 送り状番号 etc. raise a warning; the user records an exception reason and continues.
+  - Only operations that would destroy data or make records unidentifiable are strictly blocked.
+
 ### 統合受注管理V2 (integrated order management)
 
 - 選果場 orders and 産直 orders are integrated into one V2 app.
   - They are currently split into 受注管理（選果場出荷物） and 受注管理（産直出荷物）.
-- Basic record granularity (direction): 1 record = 出荷予定日 x 出荷先 x 商品.
-- 出荷区分 (選果場出荷 / 産直出荷) is held per order line.
+- Record granularity (confirmed): 1 record = 1 受注明細.
+  - Lines with the same 得意先 x 出荷先 x 出荷予定日 x 納品日 x 商品 x 出荷区分 are merged (quantity added).
+  - This combination is NOT a unique key. Use the immutable, auto-numbered 受注明細ID.
+- 出荷区分 (選果場出荷 / 産直出荷, confirmed) is held per order line.
   - It is NOT fixed per 出荷先. The same 出荷先 can have both kinds.
   - Never infer it from the product name or the product-name prefix number.
-  - The value set and input UI are not finalized.
+  - Default comes from a 出荷先 x 商品 rule. The rule management UI is not finalized.
 - The old 産直 "発注" function is abolished. Do not port views or graphs that filter on 発注.
 - "追加" is not a status. It is a change of the ordered quantity.
-- Order status and shipping status are separated (direction; concrete values not finalized).
+- Status values (confirmed): 受注状態 = 有効 / キャンセル, 出荷状態 = 未出荷 / 出荷済.
+- Cancellation keeps the original quantity. Never set it to 0. Do not delete real orders.
+- Important changes are kept as 受注変更履歴 (not only kintone's built-in history). The implementation method is not finalized.
 - The old mixed 出荷 field (未出荷/出荷済/キャンセル/追加) is not carried over to V2.
+- Samples are out of scope of 統合受注管理V2.
 
 ### 出荷管理V2 (shipping management)
 
@@ -98,15 +115,20 @@ Large monitor views and tablet screens are UI, not separate databases.
 - 送り状番号, 物流業者, 出荷Lot, actual shipment lines, and 出荷完了 belong to shipping management.
 - Never require people to enter the same information into both order and shipping management.
   - Carry order data over automatically.
-- 送り状番号 is per 出荷先, not per product line (one number even for 10 parcels).
-- Basic record granularity (direction, to be finalized in the data model design): 1 record = 出荷日 x 出荷先.
-- One order line may have multiple 出荷Lot.
+- Record granularity (confirmed): 1 record = 1 physical shipment, identified by 出荷ID.
+  - A planned-shipment record is auto-created when an order is registered.
+  - Default grouping: 出荷日 x 納品日 x 出荷先 x 得意先 x 発送元. This is NOT a unique key.
+- Status: 未出荷 / 出荷完了 only.
+- 代表送り状番号: at most one per physical shipment (Yamato: the lowest number; others may be empty).
+  - The old rule "one number even for 10 parcels" was corrected on 2026-10-08.
+- Actual shipment lines are generated from order lines. AB混合/BC混合 are split into allowed physical products; inventory is reduced by the actual shipped product.
+- One actual shipment line may have multiple 出荷Lot. Per-Lot quantities are allocated by FIFO automatically.
 
 ### Large monitor (選果場モニター)
 
 - It does NOT display order lines as they are.
 - It shows "本日、選果場でどの規格がどれだけ必要か": required quantity per grade/spec.
-- Target items for now: なす and いちご.
+- Target items for now: なす (cases) and いちご (packs), on completely separate screens.
 - 産直出荷 is out of scope.
 - Even 選果場出荷 items may be out of scope, for example finished goods brought in from producers and shipped as-is.
   - Do not decide monitor targets by 出荷区分 alone.
@@ -127,12 +149,17 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Initial inventory events: 仕切入庫 / 出荷 / 在庫調整.
 - Strict repacking or conversion history is not required in the initial version. Handle it with 在庫調整.
 - 産直出荷 is outside 選果場 inventory.
-- Per-product inventory units and case conversion values are not finalized. Do not guess them.
+- Finished-goods inventory: physical SKU x actual date x 日付Lot, quantity in cases. Different case counts (e.g. A長80本入 / A長70本入) are different SKUs.
+- Leftover (半端) inventory: grade (規格) x actual date x 日付Lot, quantity in pieces (本数). It is FIFO too; never aggregate by grade alone and lose the date.
+- The producer number is not an inventory axis. On repacking, carry over the oldest actual date and 日付Lot.
+- C品 inventory is in cases. The C品 input unit in 仕切り管理V2 (currently kg) is NOT finalized. Do not change it on your own.
+- Do not guess product-specific values (case counts, packs per case, parcel rules). They come from the product master design.
 
 ### FLAM
 
 - Sales management is done in FLAM.
   - Today, orders are entered in kintone and then re-entered in FLAM (double entry).
+- Never design kintone products as 1:1 with FLAM product codes.
 - Generating FLAM import data from V2 is a future consideration.
   - The concrete integration spec is undecided. Do not design or implement it unless instructed.
 
