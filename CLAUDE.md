@@ -10,16 +10,17 @@ The system is based on kintone.
 
 Read these before design or implementation work:
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.4, 2026-11-06)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.6, 2026-11-06)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
+   - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.2, 2026-10-09)
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.3, 2026-11-06)
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.5).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.6).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -135,8 +136,14 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Status: 未出荷 / 出荷完了 only.
 - 代表送り状番号: at most one per physical shipment (Yamato: the lowest number; others may be empty).
   - The old rule "one number even for 10 parcels" was corrected on 2026-10-08.
+  - Current practice (As-Is): screenshots of the carriers' cloud invoice systems (Yamato and Sagawa) are attached per shipping date in the existing app 送り状番号管理 (ID 34), to avoid manual input. Recording invoice numbers in V2 must not add input burden.
+  - Importing the carriers' issued-invoice data (CSV etc.) into V2 is a candidate only. Not decided; do not implement it as a confirmed spec.
 - Actual shipment lines are generated from order lines. AB混合/BC混合 are split into allowed physical products; inventory is reduced by the actual shipped product.
 - The known 6-digit 出荷Lot format is current nasu practice. Do not impose it on strawberry; strawberry Lot format/input is to be investigated.
+  - The physical label on current products is 6 digits (confirmed). The composition 商品Lot + 日付Lot + 生産者Lot is expected to be unchanged (not strictly re-verified).
+  - The existing kintone app mostly holds 4-digit input (confirmed from data), presumably 日付Lot + 生産者Lot with 商品Lot omitted.
+  - Do not confuse this 4-digit input with the 4-digit inventory Lot display (商品Lot + 日付Lot).
+  - V2 input method, whether to accept 4-digit input, and auto-completion to 6 digits are undecided.
 - One actual shipment line may have multiple 出荷Lot. Per-Lot quantities are allocated by FIFO automatically (strawberry: by pack date within the same producer and SKU).
 - After 出荷完了, record errors may be corrected only with change history and a stock difference adjustment. No silent overwrite, no double issue.
   - Real returns / reshipments are recorded as 出荷後例外 plus stock adjustment when needed (initial version).
@@ -162,6 +169,8 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Do not use it for DX-target, inventory, or monitor decisions.
 - `senkajo_dx_target` (選果場DX対象) on the existing product master was intentionally added by the user.
   - It is not an accidental production change.
+  - It is NOT used in V2 (confirmed 2026-11-06) and is not a 商品マスタV2 attribute. Do not delete or change the field in the existing app.
+  - Use the V2 attributes (モニター集計対象, 選果場在庫管理対象, 出荷Lot管理対象, etc.) instead.
 - Do not treat 商品Lot as a unique key. It is a field in the product master, not a separate master.
   - Its business meaning is not fully confirmed.
 
