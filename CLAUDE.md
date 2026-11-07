@@ -10,17 +10,20 @@ The system is based on kintone.
 
 Read these before design or implementation work:
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.4, 2026-11-06)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.6, 2026-11-06)
+Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
+
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.5, 2026-11-07)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.7, 2026-11-07)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
+   - `docs/10_as_is/FIELD_CONFIRMATION_STATUS_20261107.md` - field questionnaires: what was asked, what was answered, what is open (avoid re-asking)
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.3, 2026-11-06)
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.4, 2026-11-07)
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.6).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.7).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -103,6 +106,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 ### 統合受注管理V2 (integrated order management)
 
 - 選果場 orders and 産直 orders are integrated into one V2 app.
+- Scope (confirmed 2026-11-06): all items, including items other than nasu/strawberry.
   - They are currently split into 受注管理（選果場出荷物） and 受注管理（産直出荷物）.
 - Record granularity (confirmed): 1 record = 1 受注明細.
   - Lines with the same 得意先 x 出荷先 x 出荷予定日 x 納品日 x 商品 x 出荷区分 are merged (quantity added).
@@ -129,6 +133,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Never require people to enter the same information into both order and shipping management.
   - Carry order data over automatically.
 - Scope: 選果場出荷 only. Common app for nasu and strawberry; records and screens are per item.
+  - Covers all items shipped from the 選果場, not only nasu/strawberry (confirmed 2026-11-06). Units, grouping and mixed-loading conditions for other items are undecided.
 - Record granularity (confirmed): 1 record = 1 physical shipment, identified by 出荷ID.
   - A planned-shipment record is auto-created when a 選果場出荷 order is registered.
   - Default grouping candidate: 出荷日 x 納品日 x 出荷先 x 得意先 x 発送元 x 品目. This is NOT a unique key; the final rule is technical design.
@@ -173,6 +178,11 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Use the V2 attributes (モニター集計対象, 選果場在庫管理対象, 出荷Lot管理対象, etc.) instead.
 - Do not treat 商品Lot as a unique key. It is a field in the product master, not a separate master.
   - Its business meaning is not fully confirmed.
+- Later decisions synced on 2026-11-07 (details: BASELINE §4.1, §11.7-§11.8, §17.3, DECISION_LOG "2026-10-10〜2026-11-07"):
+  - Confirmed: never delete/change old product master records; 丸なす (とろとろ炒めなす) is out of the initial V2 scope, 火の国なす is 筑陽なす and stays in; old No.1/54/136 = 3 sales products sharing one physical SKU; 2-bag A長 and 2/3-piece packs are physical SKUs separate from normal cases. "Old No." = record number of existing app 8.
+  - Confirmed policy: a separate 資材マスタ, with standard materials and quantities linked per product; label yes/no chosen at order entry with an auto-calculated label count. Data structure, calculation basis (40/35 per case etc.) and exception handling are decided in detail design.
+  - Confirmed scope (approved 2026-11-06): 商品マスタV2 and 統合受注管理V2 = all items incl. non-nasu/strawberry; 出荷管理V2 = all items shipped from the 選果場; 在庫管理V2 and Lot management = nasu/strawberry-centered initially; monitor = nasu/strawberry only. Managing all items in orders does NOT mean implementing inventory/sorting/shikiri for all products initially. Per-product registration and detailed attributes of other items are undecided.
+  - UNDER REVIEW: AB/BC混合. The confirmed rule "no physical mixed boxes" still stands, but a 2026-11-07 proposal to keep mixed boxes (count B/C at sorting, mix by fixed counts) is NOT approved and awaits 営業・選果場 discussion and the user's decision. Do not design new box specs or SKUs on either assumption until decided.
 
 ### いちご (strawberry) production and contract processing
 
@@ -212,6 +222,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Generating FLAM import data from V2 is a future consideration.
   - The concrete integration spec is undecided. Do not design or implement it unless instructed.
   - Direction only: convert by 販売商品 x 得意先 x 納品日; nasu price periods as effective-period rules (no hard-coded dates). Missing/ambiguous FLAM mapping stops only the FLAM export, never shipping.
+  - Confirmed (2026-11-07): send the order product sold to the customer and the actual delivered quantity; physical SKUs are in principle not sent. As-Is fact: the delivery-note date basis differs per customer (出荷日 or 納品日). The per-customer date rule is undecided.
 
 ### Source of truth (V2, direction)
 
