@@ -42,15 +42,15 @@ kintone上の物理アプリ数と実装方式は、これからの技術設計�
 詳細と、確定・未確定の区別は、以下の文書を参照する。
 
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)：現在の進捗・未決定事項・次の作業（最初に読む。仕様の正本ではない）
-- [PROJECT_KNOWLEDGE_BASELINE.md](PROJECT_KNOWLEDGE_BASELINE.md)：統合ベースライン（最優先。v0.5、2026-11-07）
-- [BASIC_ARCHITECTURE.md](BASIC_ARCHITECTURE.md)：基本設計（V2方針・As-Is要約。v0.7）
+- [PROJECT_KNOWLEDGE_BASELINE.md](PROJECT_KNOWLEDGE_BASELINE.md)：統合ベースライン（最優先。v0.6、2026-11-08）
+- [BASIC_ARCHITECTURE.md](BASIC_ARCHITECTURE.md)：基本設計（V2方針・As-Is要約。v0.8）
 - [DECISION_LOG.md](DECISION_LOG.md)：意思決定ログ
-- [ORDER_SHIPPING_V2_DATA_MODEL.md](../20_design/ORDER_SHIPPING_V2_DATA_MODEL.md)：統合受注管理V2・出荷管理V2 業務データモデル（v0.4）
+- [ORDER_SHIPPING_V2_DATA_MODEL.md](../20_design/ORDER_SHIPPING_V2_DATA_MODEL.md)：統合受注管理V2・出荷管理V2 業務データモデル（v0.5）
 - [docs/10_as_is/](../10_as_is/)：現行システムの調査（[KINTONE_MCP_ASIS_SURVEY_20261106.md](../10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md)）と、現場確認の質問・回答状況（[FIELD_CONFIRMATION_STATUS_20261107.md](../10_as_is/FIELD_CONFIRMATION_STATUS_20261107.md)）
 
 品目の対象範囲（2026-11-06確定）：商品マスタV2・統合受注管理V2は全品目、出荷管理V2は選果場から発送する全品目、在庫・Lot管理は初期なす・いちご中心、大型モニターはなす・いちごのみ。
 
-2026-11-07時点の主な未決定事項：AB/BC混合の運用（見直し提案が協議・判断待ち）、他品目の各商品の登録要否・詳細属性、資材マスタ・同梱ラベルのデータ構造と計算基準、FLAMの取引先別の日付判定ルール。詳細は PROJECT_STATUS.md を参照する。
+2026-11-08時点の主な未決定事項：AB/BC混合の運用（見直し提案が協議・判断待ち）、他品目の各商品の登録要否・詳細属性と品目コード体系、資材マスタ・同梱ラベルのデータ構造と計算基準、資材在庫の管理方式、FLAMのコード対応（売上・仕入を区別）と取引先別の日付基準の持ち方、いちご加工料の売上・相殺の伝票上の扱い、いちご買取確定の担当。詳細は PROJECT_STATUS.md を参照する。
 
 ## 開発方針
 
@@ -58,3 +58,11 @@ kintone上の物理アプリ数と実装方式は、これからの技術設計�
 - 技術詳細設計：Claude Code Plan Mode
 - 実装：Claude Code
 - 実機確認：現場
+
+### GitHubを基準とした連携（2026-11-08〜）
+
+- GitHub（`yushisfk/senkajo-dx`）の master に保存された正式文書を、プロジェクトの基準とする。
+- ChatGPTは、接続が利用できる場合、GitHub上の最新版を直接確認する。ローカルの未コミットファイルは確認できない場合がある。
+- Claude Codeは、ローカルの変更、技術設計、実装、Git操作を担当する。
+- GitHubがまだ更新されていない場合は、未コミットの内容との相違に注意する（PROJECT_STATUS.md の基準コミットを確認する）。
+- GitHubへの書き込み（commit・push等）は、ユーザーの承認と既存の開発ルールに従う。

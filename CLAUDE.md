@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.5, 2026-11-07)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.7, 2026-11-07)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.6, 2026-11-08)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.8, 2026-11-08)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,9 +21,9 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.4, 2026-11-07)
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.5, 2026-11-08)
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.7).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.8).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -53,6 +53,10 @@ Do not independently change business rules or the core data model.
 
 If implementation requires changing a business rule or core data model,
 stop and report the issue before implementation.
+
+GitHub collaboration (since 2026-11-08; details in `docs/00_project/PROJECT_OVERVIEW.md`):
+- The formal documents on GitHub (`yushisfk/senkajo-dx`, master) are the project baseline. ChatGPT reads them directly when its connection is available, but may not see local uncommitted files.
+- Claude Code handles local changes, technical design, implementation and Git operations. Keep GitHub in sync; commit/push only with the user's approval.
 
 ## Development workflow
 
@@ -182,6 +186,10 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Confirmed: never delete/change old product master records; 丸なす (とろとろ炒めなす) is out of the initial V2 scope, 火の国なす is 筑陽なす and stays in; old No.1/54/136 = 3 sales products sharing one physical SKU; 2-bag A長 and 2/3-piece packs are physical SKUs separate from normal cases. "Old No." = record number of existing app 8.
   - Confirmed policy: a separate 資材マスタ, with standard materials and quantities linked per product; label yes/no chosen at order entry with an auto-calculated label count. Data structure, calculation basis (40/35 per case etc.) and exception handling are decided in detail design.
   - Confirmed scope (approved 2026-11-06): 商品マスタV2 and 統合受注管理V2 = all items incl. non-nasu/strawberry; 出荷管理V2 = all items shipped from the 選果場; 在庫管理V2 and Lot management = nasu/strawberry-centered initially; monitor = nasu/strawberry only. Managing all items in orders does NOT mean implementing inventory/sorting/shikiri for all products initially. Per-product registration and detailed attributes of other items are undecided.
+- Synced on 2026-11-08 (details: DECISION_LOG "2026-11-08", BASELINE §11.6-§11.7, §16, §17):
+  - Confirmed: A長70本 and 80本 are ONE sales product (same order product name all season) and separate physical SKUs; the order line distinguishes the actual case count. The UI/field for this is detail design.
+  - Confirmed: items are identified individually (トマト and ミニトマト are separate products and separate item classes); new items can be added. Item code system / separate item master are detail design.
+  - Field wishes (FLAM CSV buttons, 資材 inventory kept as today, strawberry purchase confirmed by the office = "B案") are NOT V2 specs until the user approves them.
   - UNDER REVIEW: AB/BC混合. The confirmed rule "no physical mixed boxes" still stands, but a 2026-11-07 proposal to keep mixed boxes (count B/C at sorting, mix by fixed counts) is NOT approved and awaits 営業・選果場 discussion and the user's decision. Do not design new box specs or SKUs on either assumption until decided.
 
 ### いちご (strawberry) production and contract processing
@@ -191,6 +199,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 - いちご受託加工管理V2: all finished SKUs count as contract-processing quantity. Only SKUs with 加工後取扱区分 = SF買取 generate purchase candidates; SF inventory increases only after a person confirms the purchase.
 - 生産者返却 SKUs never enter SF inventory. Do not track their handover date or unreturned quantity.
 - Processing fees and amounts are out of scope (FLAM etc.).
+  - As-Is (user-verified 2026-11-08, correcting field answer Q09): the processing fee is booked in FLAM as sales ("業務受託手数料") AND offset against the purchase payment to the producer. These are separate concepts. Which CSV/slip realizes each is undecided until the FLAM spec is checked; avoid double counting.
 
 ### Inventory
 
@@ -223,6 +232,8 @@ Large monitor views and tablet screens are UI, not separate databases.
   - The concrete integration spec is undecided. Do not design or implement it unless instructed.
   - Direction only: convert by 販売商品 x 得意先 x 納品日; nasu price periods as effective-period rules (no hard-coded dates). Missing/ambiguous FLAM mapping stops only the FLAM export, never shipping.
   - Confirmed (2026-11-07): send the order product sold to the customer and the actual delivered quantity; physical SKUs are in principle not sent. As-Is fact: the delivery-note date basis differs per customer (出荷日 or 納品日). The per-customer date rule is undecided.
+  - As-Is (2026-11-07 answers): most customers use 出荷日; ベジロジ and オイシックス use 納品日. Sales are entered the evening of the shipping day by issuing the delivery note in FLAM. Returns/damage are new red slips dated when received; the original slip is not changed. Where V2 holds the per-customer date basis is undecided.
+  - Nasu FLAM sales codes switch by season/price period and nasu purchase codes switch when purchase prices change; the dates need not coincide. Strawberry keeps the same code. Treat V2 product IDs and FLAM sales/purchase codes as separate identifier systems; keep sales and purchase mappings separate; no shared validity period; do not apply nasu rules to strawberry. Never guess code lists or switch dates.
 
 ### Source of truth (V2, direction)
 
