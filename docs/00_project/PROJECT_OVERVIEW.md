@@ -42,18 +42,18 @@ kintone上の物理アプリ数と実装方式は、これからの技術設計�
 詳細と、確定・未確定の区別は、以下の文書を参照する。
 
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)：現在の進捗・未決定事項・次の作業（最初に読む。仕様の正本ではない）
-- [PROJECT_KNOWLEDGE_BASELINE.md](PROJECT_KNOWLEDGE_BASELINE.md)：統合ベースライン（最優先。v0.7、2026-11-08）
-- [BASIC_ARCHITECTURE.md](BASIC_ARCHITECTURE.md)：基本設計（V2方針・As-Is要約。v0.9）
+- [PROJECT_KNOWLEDGE_BASELINE.md](PROJECT_KNOWLEDGE_BASELINE.md)：統合ベースライン（最優先。v0.8、2026-11-08）
+- [BASIC_ARCHITECTURE.md](BASIC_ARCHITECTURE.md)：基本設計（V2方針・As-Is要約。v0.10）
 - [DECISION_LOG.md](DECISION_LOG.md)：意思決定ログ
-- [ORDER_SHIPPING_V2_DATA_MODEL.md](../20_design/ORDER_SHIPPING_V2_DATA_MODEL.md)：統合受注管理V2・出荷管理V2 業務データモデル（v0.6）
+- [ORDER_SHIPPING_V2_DATA_MODEL.md](../20_design/ORDER_SHIPPING_V2_DATA_MODEL.md)：統合受注管理V2・出荷管理V2 業務データモデル（v0.7）
 - [PRODUCT_MASTER_V2_DESIGN.md](../20_design/PRODUCT_MASTER_V2_DESIGN.md)：商品マスタV2 詳細設計（レビュー用草案。正式仕様ではない。確定した判断は BASELINE §11・DECISION_LOG を正とする）
 - [docs/10_as_is/](../10_as_is/)：現行システムの調査（[KINTONE_MCP_ASIS_SURVEY_20261106.md](../10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md)）と、現場確認の質問・回答状況（[FIELD_CONFIRMATION_STATUS_20261107.md](../10_as_is/FIELD_CONFIRMATION_STATUS_20261107.md)）
 
 品目の対象範囲（2026-11-06確定）：商品マスタV2・統合受注管理V2は全品目、出荷管理V2は選果場から発送する全品目、在庫・Lot管理は初期なす・いちご中心、大型モニターはなす・いちごのみ。
 
-2026-11-08に、商品マスタV2の業務判断（受注明細の指定物理SKU、品目マスタアプリ、包装構成、仮登録・停止・削除等）を確定した（DECISION_LOG「2026-11-08（商品マスタV2の業務判断）」）。
+2026-11-08に、商品マスタV2の業務判断（受注明細の指定物理SKU、品目マスタアプリ、包装構成、仮登録・停止・削除等）を確定した（DECISION_LOG「2026-11-08（商品マスタV2の業務判断）」）。同日、第3段として、受注集約条件へのラベル要否の追加、同梱ラベル・資材在庫（棚卸数量が基準）・資材マスタ、初期版での売上・仕入CSVとFLAMコードの登録方法を確定した（DECISION_LOG「2026-11-08（商品マスタV2第3段の業務判断）」）。
 
-2026-11-08時点の主な未決定事項：AB/BC混合の運用（見直し提案が協議・判断待ち）、他品目の各商品の登録要否・詳細属性と品目コード体系、商品マスタV2の属性名・保持場所・UI等の技術設計、資材マスタ・同梱ラベルのデータ構造と計算基準、資材在庫の管理方式、FLAMのコード対応（売上・仕入を区別）と取引先別の日付基準の持ち方、いちご加工料の売上・相殺の伝票上の扱い、いちご買取確定の担当。詳細は PROJECT_STATUS.md を参照する。
+2026-11-08時点の主な未決定事項：AB/BC混合の運用（見直し提案が協議・判断待ち）、他品目の各商品の登録要否・詳細属性と品目コード体系、商品マスタV2の属性名・保持場所・UI等の技術設計、資材マスタ・同梱ラベルのデータ構造、A長以外のラベル枚数基準、資材必要量の予測方式、FLAMの具体コード・仕入の対応キー・CSV仕様（FLAM実データ確認後）、いちご加工料の売上・相殺の伝票上の扱い、いちご買取確定の担当。詳細は PROJECT_STATUS.md を参照する。
 
 ## 開発方針
 

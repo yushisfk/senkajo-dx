@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.7, 2026-11-08)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.9, 2026-11-08)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.8, 2026-11-08)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.10, 2026-11-08)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,10 +21,10 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.6, 2026-11-08)
-- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" are confirmed; its 第一案/候補 stay unconfirmed
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.7, 2026-11-08)
+- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.9).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.10).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -116,6 +116,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Record granularity (confirmed): 1 record = 1 受注明細.
   - Lines with the same 得意先 x 出荷先 x 出荷予定日 x 納品日 x 商品 x 出荷区分 are merged (quantity added).
   - The order line holds a 指定物理SKU (designated physical SKU, e.g. A長70本入 vs 80本入); lines merge only if it is also the same (confirmed 2026-11-08).
+  - The order line also holds ラベル要否 (enclosed label yes/no); lines merge only if it is also the same (confirmed 2026-11-08, C-01). Existing conditions and exceptions (different 発送元 etc.) stay. In the FLAM export, lines with the same product code and slip conditions may be summed across label yes/no.
   - This combination is NOT a unique key. Use the immutable, auto-numbered 受注明細ID.
 - 出荷区分 (選果場出荷 / 産直出荷, confirmed) is held per order line.
   - Keep the value "産直出荷". ChatGPT drafts may write "産地出荷"; treat it as the same value and do not rename.
@@ -186,12 +187,12 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Its business meaning is not fully confirmed.
 - Later decisions synced on 2026-11-07 (details: BASELINE §4.1, §11.7-§11.8, §17.3, DECISION_LOG "2026-10-10〜2026-11-07"):
   - Confirmed: never delete/change old product master records; 丸なす (とろとろ炒めなす) is out of the initial V2 scope, 火の国なす is 筑陽なす and stays in; old No.1/54/136 = 3 sales products sharing one physical SKU; 2-bag A長 and 2/3-piece packs are physical SKUs separate from normal cases. "Old No." = record number of existing app 8.
-  - Confirmed policy: a separate 資材マスタ, with standard materials and quantities linked per product; label yes/no chosen at order entry with an auto-calculated label count. Data structure, calculation basis (40/35 per case etc.) and exception handling are decided in detail design.
+  - Confirmed policy: a separate 資材マスタ, with standard materials and quantities linked per product; label yes/no chosen at order entry with an auto-calculated label count. (Details decided on 2026-11-08 in stage 3; see below.)
   - Confirmed scope (approved 2026-11-06): 商品マスタV2 and 統合受注管理V2 = all items incl. non-nasu/strawberry; 出荷管理V2 = all items shipped from the 選果場; 在庫管理V2 and Lot management = nasu/strawberry-centered initially; monitor = nasu/strawberry only. Managing all items in orders does NOT mean implementing inventory/sorting/shikiri for all products initially. Per-product registration and detailed attributes of other items are undecided.
 - Synced on 2026-11-08 (details: DECISION_LOG "2026-11-08", BASELINE §11.6-§11.7, §16, §17):
   - Confirmed: A長70本 and 80本 are ONE sales product (same order product name all season) and separate physical SKUs; the order line distinguishes the actual case count. The UI/field for this is detail design.
   - Confirmed: items are identified individually (トマト and ミニトマト are separate products and separate item classes); new items can be added. Item code system / separate item master are detail design.
-  - Field wishes (FLAM CSV buttons, 資材 inventory kept as today, strawberry purchase confirmed by the office = "B案") are NOT V2 specs until the user approves them.
+  - Field wishes (FLAM CSV buttons, strawberry purchase confirmed by the office = "B案") are NOT V2 specs until the user approves them. (The 資材 inventory wish was adopted in part on 2026-11-08: Mon/Thu stocktake counts are the basis.)
 - Synced on 2026-11-08, product master decisions (details: DECISION_LOG "2026-11-08（商品マスタV2の業務判断）", BASELINE §5.1, §11.6, §11.7, §11.9):
   - Order line keeps a 指定物理SKU and it is part of the merge condition. Do NOT extend this to AB/BC混合: they are still split into allowed physical SKUs at actual shipment.
   - Default 指定物理SKU = registered standard value (considering customer / destination), changed only for exceptions; no fixed seasonal auto-switch in the initial version; changing the standard never silently rewrites registered orders. Field: same customer/destination/day never mixes 70本 and 80本 today, but the system does not forbid it.
@@ -201,6 +202,11 @@ Large monitor views and tablet screens are UI, not separate databases.
   - A physical spec change = new physical SKU; non-physical fixes (typos) may edit the SKU; price or C品 weight-conversion changes alone do not create SKUs; master edits never overwrite past orders/shipments/stock.
   - 仮登録 products may have both flags "no" and are excluded from normal order selection; 使用可 needs at least one flag "yes". Products that were ever 使用可 are stopped, never deleted; only unreferenced 仮登録 mistakes may be deleted, after a reference check.
   - Still undecided: field names/storage/UI, standard-value storage and priority, item code system, exception intake for unregistered products, shipping exception handling, BC2本パック C品 conversion, A品10kgバラ piece count, and everything listed as undecided in BASELINE §22.
+- Synced on 2026-11-08, product master stage 3 decisions (materials, labels, FLAM; details: DECISION_LOG "2026-11-08（商品マスタV2第3段の業務判断）", BASELINE §5.1, §11.8, §17.3-§17.5):
+  - Labels: the order line's label yes/no wins; default comes from 出荷先マスタV2's standard label setting ("店舗" = 出荷先); a mismatch with the sales product's explicit label condition gives a warning and an exception record, never a stop. A長70本入/80本入 = 27 labels per labelled case (roll pre-cut into sets of 27, one set per case). Never use quantities in old product names as a calculation basis. Other products' label counts and the roll's stock unit are undecided.
+  - 資材 inventory: the Mon/Thu stocktake count is the basis; no per-receipt/per-use entry in the initial version; forecast material needs from orders to warn of shortages. Stocktake counts are confirmed values; forecasts/estimated use are estimates; a stocktake difference is not actual consumption. Reuse of the existing stocktake app is decided after inspecting it.
+  - 資材マスタ: register all shipping materials in principle; auto-calculate only where standard usage is known; statuses 仮登録/使用可/停止 (never delete once 使用可); distinguish calculable / explicitly none (0) / not calculated; a missing setting is never 0; not-calculated warns but never stops orders or shipping.
+  - The calculation method, storage structures and screens are technical design; the review draft's 第一案/候補 are not confirmed.
   - UNDER REVIEW: AB/BC混合. The confirmed rule "no physical mixed boxes" still stands, but a 2026-11-07 proposal to keep mixed boxes (count B/C at sorting, mix by fixed counts) is NOT approved and awaits 営業・選果場 discussion and the user's decision. Do not design new box specs or SKUs on either assumption until decided.
 
 ### いちご (strawberry) production and contract processing
@@ -239,11 +245,14 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Sales management is done in FLAM.
   - Today, orders are entered in kintone and then re-entered in FLAM (double entry).
 - Never design kintone products as 1:1 with FLAM product codes.
-- Generating FLAM import data from V2 is a future consideration.
-  - The concrete integration spec is undecided. Do not design or implement it unless instructed.
+- FLAM import data: the initial version implements BOTH a sales CSV and a purchase CSV (confirmed 2026-11-08, stage 3). Purchase covers nasu producer purchases and strawberry SF purchases.
+  - The concrete CSV spec (layout, units, timing, red slips), concrete FLAM codes, the purchase-side mapping key, the purchase slip date basis and the strawberry processing-fee slips are undecided until real FLAM data is checked. Do not guess them.
+  - Sales and purchase codes, validity periods and switch conditions are independent. The office enters FLAM codes from the 商品マスタ screen as "new code + start date"; old codes/periods are kept as history; an internal mapping table is allowed but staff never edit a complex table directly. Do not assume a bulk load of all FLAM codes; initial codes come from the past year's FLAM transactions. Do not force a per-product key for purchase codes.
+  - Finalized past CSV outputs are never rewritten by master changes (codes or date basis).
+  - Using the 指定物理SKU to pick a FLAM code is compatible with not exporting physical SKUs.
   - Direction only: convert by 販売商品 x 得意先 x 納品日; nasu price periods as effective-period rules (no hard-coded dates). Missing/ambiguous FLAM mapping stops only the FLAM export, never shipping.
-  - Confirmed (2026-11-07): send the order product sold to the customer and the actual delivered quantity; physical SKUs are in principle not sent. As-Is fact: the delivery-note date basis differs per customer (出荷日 or 納品日). The per-customer date rule is undecided.
-  - As-Is (2026-11-07 answers): most customers use 出荷日; ベジロジ and オイシックス use 納品日. Sales are entered the evening of the shipping day by issuing the delivery note in FLAM. Returns/damage are new red slips dated when received; the original slip is not changed. Where V2 holds the per-customer date basis is undecided.
+  - Confirmed (2026-11-07): send the order product sold to the customer and the actual delivered quantity; physical SKUs are in principle not sent. As-Is fact: the delivery-note date basis differs per customer (出荷日 or 納品日). The sales slip date basis is held in 顧客マスタV2 (confirmed 2026-11-08).
+  - As-Is (2026-11-07 answers): most customers use 出荷日; ベジロジ and オイシックス use 納品日. Sales are entered the evening of the shipping day by issuing the delivery note in FLAM. Returns/damage are new red slips dated when received; the original slip is not changed. V2 holds the sales slip date basis in 顧客マスタV2 (confirmed 2026-11-08).
   - Nasu FLAM sales codes switch by season/price period and nasu purchase codes switch when purchase prices change; the dates need not coincide. Strawberry keeps the same code. Treat V2 product IDs and FLAM sales/purchase codes as separate identifier systems; keep sales and purchase mappings separate; no shared validity period; do not apply nasu rules to strawberry. Never guess code lists or switch dates.
 
 ### Source of truth (V2, direction)
