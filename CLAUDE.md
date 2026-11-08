@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.6, 2026-11-08)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.8, 2026-11-08)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.7, 2026-11-08)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.9, 2026-11-08)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,9 +21,10 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.5, 2026-11-08)
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.6, 2026-11-08)
+- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" are confirmed; its 第一案/候補 stay unconfirmed
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.8).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.9).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -114,6 +115,7 @@ Large monitor views and tablet screens are UI, not separate databases.
   - They are currently split into 受注管理（選果場出荷物） and 受注管理（産直出荷物）.
 - Record granularity (confirmed): 1 record = 1 受注明細.
   - Lines with the same 得意先 x 出荷先 x 出荷予定日 x 納品日 x 商品 x 出荷区分 are merged (quantity added).
+  - The order line holds a 指定物理SKU (designated physical SKU, e.g. A長70本入 vs 80本入); lines merge only if it is also the same (confirmed 2026-11-08).
   - This combination is NOT a unique key. Use the immutable, auto-numbered 受注明細ID.
 - 出荷区分 (選果場出荷 / 産直出荷, confirmed) is held per order line.
   - Keep the value "産直出荷". ChatGPT drafts may write "産地出荷"; treat it as the same value and do not rename.
@@ -190,6 +192,15 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Confirmed: A長70本 and 80本 are ONE sales product (same order product name all season) and separate physical SKUs; the order line distinguishes the actual case count. The UI/field for this is detail design.
   - Confirmed: items are identified individually (トマト and ミニトマト are separate products and separate item classes); new items can be added. Item code system / separate item master are detail design.
   - Field wishes (FLAM CSV buttons, 資材 inventory kept as today, strawberry purchase confirmed by the office = "B案") are NOT V2 specs until the user approves them.
+- Synced on 2026-11-08, product master decisions (details: DECISION_LOG "2026-11-08（商品マスタV2の業務判断）", BASELINE §5.1, §11.6, §11.7, §11.9):
+  - Order line keeps a 指定物理SKU and it is part of the merge condition. Do NOT extend this to AB/BC混合: they are still split into allowed physical SKUs at actual shipment.
+  - Default 指定物理SKU = registered standard value (considering customer / destination), changed only for exceptions; no fixed seasonal auto-switch in the initial version; changing the standard never silently rewrites registered orders. Field: same customer/destination/day never mixes 70本 and 80本 today, but the system does not forbid it.
+  - One 品目マスタ app; 商品マスタV2 references it by item ID. No per-item product master apps.
+  - 品種 = optional attribute. 等級区分 / 在庫商品区分 are not added for now. A structured leftover (半端) grade is set automatically from the physical SKU (not from names; separate from モニター集計規格). Leftover inventory axis/unit/FIFO unchanged.
+  - Packaging = two-level structure from the quantity unit, plus a per-grade content breakdown only where needed (e.g. BC2本パック = 30 packs/case, 2 pcs/pack, B1 + C1). 仕切り区分 and content composition are separate concepts. Never treat quantities with undecided conversion as zero.
+  - A physical spec change = new physical SKU; non-physical fixes (typos) may edit the SKU; price or C品 weight-conversion changes alone do not create SKUs; master edits never overwrite past orders/shipments/stock.
+  - 仮登録 products may have both flags "no" and are excluded from normal order selection; 使用可 needs at least one flag "yes". Products that were ever 使用可 are stopped, never deleted; only unreferenced 仮登録 mistakes may be deleted, after a reference check.
+  - Still undecided: field names/storage/UI, standard-value storage and priority, item code system, exception intake for unregistered products, shipping exception handling, BC2本パック C品 conversion, A品10kgバラ piece count, and everything listed as undecided in BASELINE §22.
   - UNDER REVIEW: AB/BC混合. The confirmed rule "no physical mixed boxes" still stands, but a 2026-11-07 proposal to keep mixed boxes (count B/C at sorting, mix by fixed counts) is NOT approved and awaits 営業・選果場 discussion and the user's decision. Do not design new box specs or SKUs on either assumption until decided.
 
 ### いちご (strawberry) production and contract processing
