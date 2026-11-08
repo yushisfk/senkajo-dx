@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.9, 2026-11-09)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.11, 2026-11-09)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.10, 2026-11-09)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.12, 2026-11-09)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,10 +21,10 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.8, 2026-11-09)
-- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" and "2026-11-09（設定値の現場管理の原則・旧No.22/128の確認）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.9, 2026-11-09)
+- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" and "2026-11-09（設定値の現場管理の原則・旧No.22/128の確認）" and "2026-11-09（商品マスタV2第4段の業務方針：初期登録・サンプル出荷・物理SKUの現場主導）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.11).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.12).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -106,6 +106,8 @@ Large monitor views and tablet screens are UI, not separate databases.
   - Materials used per product, material types, standard usage and label counts are set and changed by field staff in the master. Never hard-code per-product quantities; changing a setting must not require a program change.
   - The system stores settings, calculates requirements, forecasts shortages, warns when a setting is missing, and keeps change history. Setting changes never silently alter finalized past orders/shipments.
   - Per-product material quantities and label counts are field initial-setup items, not management decisions at development time. Do not decide them yourself and do not ask management for each value. A長's 27 labels per case is the confirmed current setting value, stored as a changeable master value, not fixed in code.
+  - The same applies to physical SKUs (confirmed 2026-11-09, M-3): the field decides whether individual products are the same or different physical SKUs and registers/changes the sales product x physical SKU links. Development designs the structure and screens, processes orders/shipments/stock by those settings, warns on inconsistencies, and keeps change history. Never decide or merge individual products' physical SKUs yourself.
+  - Ask management only about system-wide rules, scope and important business policies.
 - Do not stop field operations because of system inconsistencies.
   - Stock shortage, missing Lot, missing 送り状番号 etc. raise a warning; the user records an exception reason and continues.
   - Only operations that would create duplicate IDs, destroy data or make records unidentifiable are strictly blocked.
@@ -134,6 +136,7 @@ Large monitor views and tablet screens are UI, not separate databases.
 - Important changes are kept as 受注変更履歴 (not only kintone's built-in history). The implementation method is not finalized.
 - The old mixed 出荷 field (未出荷/出荷済/キャンセル/追加) is not carried over to V2.
 - Samples are out of scope of the normal order flow in the initial version.
+  - Sample / irregular shipments ARE recorded in V2 (confirmed 2026-11-09, M-2). Do not create generic dummy products (like old No.34 "サンプル出荷・イレギュラー出荷" / No.59 "その他") in principle; register the needed products by their actual content. Recording shipments is separate from initially registering every sample product. Old No.131 (丸なす sample) is not registered. How samples are distinguished (FLAM/monitor/stock) and how shipments of unregistered products are recorded are technical design.
 - 産直出荷 is handled entirely in 統合受注管理V2: a person registers 出荷済 manually. It creates NO 出荷管理V2 record and NO inventory event.
 - The same order must not be registered or counted twice via 苺流通システム and another route.
 
@@ -211,6 +214,12 @@ Large monitor views and tablet screens are UI, not separate databases.
   - 資材 inventory: the Mon/Thu stocktake count is the basis; no per-receipt/per-use entry in the initial version; forecast material needs from orders to warn of shortages. Stocktake counts are confirmed values; forecasts/estimated use are estimates; a stocktake difference is not actual consumption. Reuse of the existing stocktake app is decided after inspecting it.
   - 資材マスタ: register all shipping materials in principle; auto-calculate only where standard usage is known; statuses 仮登録/使用可/停止 (never delete once 使用可); distinguish calculable / explicitly none (0) / not calculated; a missing setting is never 0; not-calculated warns but never stops orders or shipping.
   - The calculation method, storage structures and screens are technical design; the review draft's 第一案/候補 are not confirmed.
+- Synced on 2026-11-09, product master stage 4 policies (details: DECISION_LOG "2026-11-09（商品マスタV2第4段の業務方針：初期登録・サンプル出荷・物理SKUの現場主導）", BASELINE §11.11):
+  - M-1: products with no orders in about the last year are, in principle, NOT initially registered in V2; products whose continued sale or restart is confirmed by sales/office are added as initial candidates. No orders is never proof of discontinuation. Old master records are never deleted. Products can be added later via 仮登録 -> 使用可.
+  - M-2: see Samples above. Old No.34/59/180 contents are confirmed by the field.
+  - M-3: individual physical SKU classification and sales product links are field decisions (see the V2-wide principles). Keep the confirmed physical SKU rules. Registering a physical SKU is separate from making it a 選果場 inventory target. Old No.22/128 stay separate sales products; their physical SKU composition is a field confirmation item.
+  - M-4: whether each physical SKU is a 選果場 inventory target is decided by the field and set in the product master. The system processes stock by that setting, based on the actual shipped physical SKU; the rule "reduce stock only for SF-owned inventory-target SKUs" is unchanged, and non-target SKUs still get 出荷完了 / 出荷済 normally. Never decide individual values (incl. old No.22/128) yourself. Settings screen, permissions, input checks, unset handling, change history and protection of finalized records are technical design.
+  - The stage 4 classification of 181 old records (local-data, candidates only) is not a registration decision; do not change it mechanically from these policies.
   - UNDER REVIEW: AB/BC混合. The confirmed rule "no physical mixed boxes" still stands, but a 2026-11-07 proposal to keep mixed boxes (count B/C at sorting, mix by fixed counts) is NOT approved and awaits 営業・選果場 discussion and the user's decision. Do not design new box specs or SKUs on either assumption until decided.
 
 ### いちご (strawberry) production and contract processing
