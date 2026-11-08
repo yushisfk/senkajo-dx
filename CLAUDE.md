@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.8, 2026-11-08)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.10, 2026-11-08)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.9, 2026-11-09)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.11, 2026-11-09)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,10 +21,10 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.7, 2026-11-08)
-- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.8, 2026-11-09)
+- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" and "2026-11-09（設定値の現場管理の原則・旧No.22/128の確認）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.10).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.11).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
@@ -102,6 +102,10 @@ Large monitor views and tablet screens are UI, not separate databases.
 
 - Default values are set automatically from masters/rules and saved as snapshots on the record. People edit only exceptions.
 - Link to masters by ID; keep names as snapshots.
+- Business setting values are managed by the field in the masters; the system works correctly from those settings (confirmed 2026-11-09).
+  - Materials used per product, material types, standard usage and label counts are set and changed by field staff in the master. Never hard-code per-product quantities; changing a setting must not require a program change.
+  - The system stores settings, calculates requirements, forecasts shortages, warns when a setting is missing, and keeps change history. Setting changes never silently alter finalized past orders/shipments.
+  - Per-product material quantities and label counts are field initial-setup items, not management decisions at development time. Do not decide them yourself and do not ask management for each value. A長's 27 labels per case is the confirmed current setting value, stored as a changeable master value, not fixed in code.
 - Do not stop field operations because of system inconsistencies.
   - Stock shortage, missing Lot, missing 送り状番号 etc. raise a warning; the user records an exception reason and continues.
   - Only operations that would create duplicate IDs, destroy data or make records unidentifiable are strictly blocked.
@@ -203,7 +207,7 @@ Large monitor views and tablet screens are UI, not separate databases.
   - 仮登録 products may have both flags "no" and are excluded from normal order selection; 使用可 needs at least one flag "yes". Products that were ever 使用可 are stopped, never deleted; only unreferenced 仮登録 mistakes may be deleted, after a reference check.
   - Still undecided: field names/storage/UI, standard-value storage and priority, item code system, exception intake for unregistered products, shipping exception handling, BC2本パック C品 conversion, A品10kgバラ piece count, and everything listed as undecided in BASELINE §22.
 - Synced on 2026-11-08, product master stage 3 decisions (materials, labels, FLAM; details: DECISION_LOG "2026-11-08（商品マスタV2第3段の業務判断）", BASELINE §5.1, §11.8, §17.3-§17.5):
-  - Labels: the order line's label yes/no wins; default comes from 出荷先マスタV2's standard label setting ("店舗" = 出荷先); a mismatch with the sales product's explicit label condition gives a warning and an exception record, never a stop. A長70本入/80本入 = 27 labels per labelled case (roll pre-cut into sets of 27, one set per case). Never use quantities in old product names as a calculation basis. Other products' label counts and the roll's stock unit are undecided.
+  - Labels: the order line's label yes/no wins; default comes from 出荷先マスタV2's standard label setting ("店舗" = 出荷先); a mismatch with the sales product's explicit label condition gives a warning and an exception record, never a stop. A長70本入/80本入 = 27 labels per labelled case (roll pre-cut into sets of 27, one set per case). Never use quantities in old product names as a calculation basis. Other products' label counts and the roll's stock unit are field setting values (confirmed 2026-11-09).
   - 資材 inventory: the Mon/Thu stocktake count is the basis; no per-receipt/per-use entry in the initial version; forecast material needs from orders to warn of shortages. Stocktake counts are confirmed values; forecasts/estimated use are estimates; a stocktake difference is not actual consumption. Reuse of the existing stocktake app is decided after inspecting it.
   - 資材マスタ: register all shipping materials in principle; auto-calculate only where standard usage is known; statuses 仮登録/使用可/停止 (never delete once 使用可); distinguish calculable / explicitly none (0) / not calculated; a missing setting is never 0; not-calculated warns but never stops orders or shipping.
   - The calculation method, storage structures and screens are technical design; the review draft's 第一案/候補 are not confirmed.
