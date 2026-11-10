@@ -12,8 +12,8 @@ Read these before design or implementation work:
 
 Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions, next tasks). It is an entry point, NOT a spec; if it disagrees with the documents below, they win.
 
-1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.10, 2026-11-09)
-2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.12, 2026-11-09)
+1. `docs/00_project/PROJECT_KNOWLEDGE_BASELINE.md` - integrated baseline of business premises and design policy (highest priority; v0.11, 2026-11-11)
+2. `docs/00_project/BASIC_ARCHITECTURE.md` - high-level design (Part I: V2 policy / Part II: current As-Is; v0.13, 2026-11-11)
 3. `docs/00_project/DECISION_LOG.md` - decision history (superseded entries are annotated, not deleted)
 4. `docs/10_as_is/` - As-Is records of the existing production kintone apps
    - `docs/10_as_is/KINTONE_MCP_ASIS_SURVEY_20261106.md` - read-only kintone MCP survey of 8 existing apps (app IDs, field definitions, references, 出荷Lot and 送り状番号 practice)
@@ -21,10 +21,10 @@ Start with `docs/00_project/PROJECT_STATUS.md` (current progress, open decisions
 
 Formal design documents under `docs/20_design/` detail the documents above and are kept in sync with them:
 
-- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.9, 2026-11-09)
-- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" and "2026-11-09（設定値の現場管理の原則・旧No.22/128の確認）" and "2026-11-09（商品マスタV2第4段の業務方針：初期登録・サンプル出荷・物理SKUの現場主導）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
+- `docs/20_design/ORDER_SHIPPING_V2_DATA_MODEL.md` - business data model of 統合受注管理V2 and 出荷管理V2 (v0.10, 2026-11-11)
+- `docs/20_design/PRODUCT_MASTER_V2_DESIGN.md` - 商品マスタV2 detailed design, REVIEW DRAFT (not a formal spec). Only the user decisions recorded in DECISION_LOG "2026-11-08（商品マスタV2の業務判断）" and "2026-11-08（商品マスタV2第3段の業務判断）" and "2026-11-09（設定値の現場管理の原則・旧No.22/128の確認）" and "2026-11-09（商品マスタV2第4段の業務方針：初期登録・サンプル出荷・物理SKUの現場主導）" and "2026-11-10〜2026-11-11（在庫判定保留・在庫不足の業務方針と本番詳細設計の技術方針）" are confirmed; its 第一案/候補/未確定 stay unconfirmed
 
-The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.12).
+The business specs of なす仕切り管理V2, いちご製造計画V2 and いちご受託加工管理V2 live in `BASIC_ARCHITECTURE.md` (v0.13).
 
 Draft or review files from ChatGPT (e.g. under `local-data/`) are NOT formal documents until they are synced into the files above.
 
